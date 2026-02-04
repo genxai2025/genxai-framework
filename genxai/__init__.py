@@ -24,7 +24,6 @@ from genxai.core.graph import (
     Graph,
     Node,
     NodeType,
-    TriggerWorkflowRunner,
     WorkflowExecutor,
     execute_workflow_sync,
 )
@@ -69,7 +68,6 @@ __all__ = [
     "EnhancedGraph",
     "WorkflowExecutor",
     "execute_workflow_sync",
-    "TriggerWorkflowRunner",
     "Node",
     "NodeType",
     "Edge",
