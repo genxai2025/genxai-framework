@@ -11,6 +11,7 @@ from genxai.core.agent.base import Agent
 from genxai.llm.base import LLMProvider
 from genxai.llm.factory import LLMProviderFactory
 from genxai.core.memory.shared import SharedMemoryBus
+from genxai.utils.tokens import manage_context_window
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,6 @@ class AgentRuntime:
             asyncio.TimeoutError: If execution times out
         """
         start_time = time.time()
-        set_log_context(agent_id=self.agent.id)
         
         if context is None:
             context = {}
@@ -123,28 +123,13 @@ class AgentRuntime:
         status = "success"
         error_type: Optional[str] = None
         try:
-            with span(
-                "genxai.agent.execute",
-                {"agent_id": self.agent.id, "agent_role": self.agent.config.role},
-            ):
-                user = get_current_user()
-                if user is not None:
-                    get_policy_engine().check(user, f"agent:{self.agent.id}", Permission.AGENT_EXECUTE)
-                    get_audit_log().record(
-                        AuditEvent(
-                            action="agent.execute",
-                            actor_id=user.user_id,
-                            resource_id=f"agent:{self.agent.id}",
-                            status="allowed",
-                        )
-                    )
-                if execution_timeout:
-                    result = await asyncio.wait_for(
-                        self._execute_internal(task, context),
-                        timeout=execution_timeout
-                    )
-                else:
-                    result = await self._execute_internal(task, context)
+            if execution_timeout:
+                result = await asyncio.wait_for(
+                    self._execute_internal(task, context),
+                    timeout=execution_timeout
+                )
+            else:
+                result = await self._execute_internal(task, context)
 
             execution_time = time.time() - start_time
             result["execution_time"] = execution_time
@@ -154,23 +139,14 @@ class AgentRuntime:
             status = "error"
             error_type = type(exc).__name__
             logger.error(f"Agent {self.agent.id} execution timed out after {execution_timeout}s")
-            record_exception(exc)
             raise
         except Exception as e:
             status = "error"
             error_type = type(e).__name__
             logger.error(f"Agent {self.agent.id} execution failed: {e}")
-            record_exception(e)
             raise AgentExecutionError(f"Agent execution failed: {e}") from e
         finally:
-            execution_time = time.time() - start_time
-            record_agent_execution(
-                agent_id=self.agent.id,
-                duration=execution_time,
-                status=status,
-                error_type=error_type,
-            )
-            clear_log_context()
+            _ = time.time() - start_time
 
     async def _execute_internal(
         self,
@@ -392,28 +368,10 @@ class AgentRuntime:
 
             duration = time.time() - start_time
             provider_name = self._llm_provider.__class__.__name__
-            record_llm_request(
-                provider=provider_name,
-                model=self.agent.config.llm_model,
-                duration=duration,
-                status="success",
-                input_tokens=response.usage.get("prompt_tokens", 0),
-                output_tokens=response.usage.get("completion_tokens", 0),
-                total_cost=0.0,
-            )
-            add_event("llm.response", {"tokens": response.usage.get("total_tokens", 0)})
             return response.content
 
         except Exception as e:
             duration = time.time() - start_time
-            provider_name = self._llm_provider.__class__.__name__ if self._llm_provider else "unknown"
-            record_llm_request(
-                provider=provider_name,
-                model=self.agent.config.llm_model,
-                duration=duration,
-                status="error",
-                total_cost=0.0,
-            )
             logger.error(f"LLM call failed for agent {self.agent.id}: {e}")
             raise RuntimeError(f"LLM call failed: {e}") from e
 

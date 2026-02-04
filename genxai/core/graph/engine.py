@@ -19,11 +19,6 @@ from genxai.core.graph.checkpoints import (
     WorkflowCheckpointManager,
     create_checkpoint,
 )
-#from enterprise.genxai.observability.metrics import (
-#    record_workflow_execution,
-#    record_workflow_node_execution,
-#)
-#from enterprise.genxai.observability.tracing import span, record_exception
 
 logger = logging.getLogger(__name__)
 
@@ -280,20 +275,13 @@ class Graph:
 
         # Execute from entry points
         try:
-            with span("genxai.workflow.execute", {"workflow_id": self.name}):
-                for entry_point in entry_points:
-                    await self._execute_node(entry_point, state, max_iterations, event_callback)
-        except Exception as exc:
+            for entry_point in entry_points:
+                await self._execute_node(entry_point, state, max_iterations, event_callback)
+        except Exception:
             status = "error"
-            record_exception(exc)
             raise
         finally:
-            duration = time.time() - start_time
-            record_workflow_execution(
-                workflow_id=self.name,
-                duration=duration,
-                status=status,
-            )
+            _ = time.time() - start_time
 
         logger.info(f"Graph execution completed: {self.name}")
         state["node_events"] = state.get("node_events", [])
@@ -360,22 +348,13 @@ class Graph:
 
         try:
             # Execute node (placeholder - will be implemented with actual executors)
-            with span(
-                "genxai.workflow.node",
-                {"workflow_id": self.name, "node_id": node_id, "node_type": node.type.value},
-            ):
-                result = await self._execute_node_logic(node, state, max_iterations)
+            result = await self._execute_node_logic(node, state, max_iterations)
             node.result = result
             node.status = NodeStatus.COMPLETED
             logger.debug(f"Node completed: {node_id}")
 
             node_duration_ms = int((time.time() - node_start) * 1000)
 
-            record_workflow_node_execution(
-                workflow_id=self.name,
-                node_id=node_id,
-                status="success",
-            )
             completed_event = {
                 "node_id": node_id,
                 "status": NodeStatus.COMPLETED.value,
@@ -423,11 +402,6 @@ class Graph:
             node.error = str(e)
             logger.error(f"Node execution failed: {node_id} - {e}")
             node_duration_ms = int((time.time() - node_start) * 1000)
-            record_workflow_node_execution(
-                workflow_id=self.name,
-                node_id=node_id,
-                status="error",
-            )
             failed_event = {
                 "node_id": node_id,
                 "status": NodeStatus.FAILED.value,
