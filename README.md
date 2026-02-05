@@ -1,6 +1,6 @@
 # GenXAI - Advanced Agentic AI Framework
 
-**Version:** 1.0.0  
+**Version:** 0.1.4  
 **Status:** Active Development  
 **License:** MIT
 
@@ -8,7 +8,7 @@
 
 ## 🚀 Overview
 
-GenXAI is an advanced agentic AI framework designed to surpass existing solutions (CrewAI, AutoGen, BeeAI) by combining:
+GenXAI is an advanced agentic AI framework designed to surpass existing solutions (CrewAI, AutoGen, BeeAI, n8n) by combining:
 
 - **Graph-Based Orchestration** (like LangGraph) for complex agent workflows
 - **Advanced Memory Systems** with multiple memory types (short-term, long-term, episodic, semantic, procedural)
@@ -126,39 +126,6 @@ Comprehensive documentation is available in the following files:
 ```
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete details.
-
----
-
-## 🚦 Development Roadmap
-
-### Phase 1: Foundation (Weeks 1-4)
-- Core graph engine
-- Basic agent system
-- CLI interface
-- Initial documentation
-
-### Phase 2: Advanced Features (Weeks 5-8)
-- Complete memory system
-- Communication layer
-- 20+ built-in tools
-
-### Phase 3: No-Code Studio (Weeks 9-12)
-- Visual workflow builder
-- REST API
-- Real-time testing
-
-### Phase 4: Enterprise Features (Weeks 13-16)
-- Observability stack
-- Security features
-- 50+ tools total
-
-### Phase 5: Polish & Launch (Weeks 17-20)
-- Documentation
-- Examples & templates
-- Beta testing
-- Official launch 🚀
-
-See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the timeline.
 
 ---
 
@@ -285,13 +252,13 @@ await trigger.start()
 
 ```bash
 # Core install
-pip install genxai
+pip install genxai-framework
 
-# Full install with providers/tools/API (core)
-pip install "genxai[llm,tools,api]"
+# Full install with providers/tools (core)
+pip install "genxai-framework[llm,tools]"
 
 # Everything included
-pip install "genxai[all]"
+pip install "genxai-framework[all]"
 ```
 
 > For the enterprise Studio, use the enterprise repository and its commercial license.
